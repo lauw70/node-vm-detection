@@ -1,0 +1,25 @@
+{
+  "name": "vm-detection",
+  "version": "1.0.0",
+  "description": "Detect Virtual Machines from node",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm run build && node test.js",
+    "postinstall": "npm run rebuild",
+    "rebuild": "node-gyp rebuild",
+    "build": "node-gyp build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lauw70/node-vm-detection.git"
+  },
+  "author": "Laurens Bremers",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lauw70/node-vm-detection/issues"
+  },
+  "homepage": "https://github.com/lauw70/node-vm-detection#readme",
+  "dependencies": {
+    "napi-macros": "^2.0.0"
+  }
+}
