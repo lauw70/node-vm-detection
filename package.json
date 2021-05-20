@@ -1,20 +1,21 @@
 {
   "name": "vm-detection",
   "version": "1.0.0",
-  "description": "Detect Virtual Machines from node",
+  "description": "Detect Virtual Machines from node <adapted from https://github.com/a0rtega/pafish>",
   "main": "index.js",
   "scripts": {
     "test": "npm run build && node test.js",
     "postinstall": "npm run rebuild",
-    "rebuild": "node-gyp rebuild",
-    "build": "node-gyp build"
+    "rebuild": "node-gyp rebuild -j 16",
+    "build": "node-gyp build -j 16",
+    "prepublish": "npm run rebuild && node test.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/lauw70/node-vm-detection.git"
   },
   "author": "Laurens Bremers",
-  "license": "ISC",
+  "license": "AGPL-3.0-only",
   "bugs": {
     "url": "https://github.com/lauw70/node-vm-detection/issues"
   },
