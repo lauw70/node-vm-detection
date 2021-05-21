@@ -18,6 +18,25 @@
     NAPI_STATUS_THROWS(napi_set_named_property(env, exports, #name, name##_bool)) \
   }
 
+static napi_status set_string(napi_env env, napi_value *object, const char* key, const char* value)
+{
+    napi_value utf8_value;
+    napi_status status = napi_create_string_utf8(env, value, NAPI_AUTO_LENGTH, &utf8_value);
+    if (status != napi_ok)
+    {
+        return status;
+    }
+
+    status = napi_set_named_property(env, *object, key, utf8_value);
+    if (status != napi_ok)
+    {
+        return status;
+    }
+
+
+    return napi_ok;
+}
+
 NAPI_METHOD(cpuRdtsc)
 {
   NAPI_ARGV(3)
@@ -66,25 +85,28 @@ NAPI_METHOD(cpuRdtsc)
 NAPI_METHOD(cpuInfo)
 {
   napi_value exports;
-  NAPI_STATUS_THROWS_VOID(napi_create_object(env, &exports));
+  NAPI_STATUS_THROWS(napi_create_object(env, &exports));
 
   // get vendor
   char vendor[13];
   cpu_write_vendor(vendor);
-  NAPI_EXPORT_STRING(vendor);
-
+  // we can't use NAPI_EXPORT_STRING since that
+  // uses NAPI_STATUS_THROWS_VOID which means we start returning
+  // corrupt pointers on error paths.
+  NAPI_STATUS_THROWS(set_string(env, &exports, "vendor", vendor));
+ 
   // hypervisor vendor
   char hypervisorVendor[13];
   cpu_write_hv_vendor(hypervisorVendor);
   if (strlen(hypervisorVendor) > 10)
   {
-    NAPI_EXPORT_STRING(hypervisorVendor);
+    NAPI_STATUS_THROWS(set_string(env, &exports, "hypervisorVendor", hypervisorVendor));
   }
   else
   {
     napi_value nullVal;
-    NAPI_STATUS_THROWS_VOID(napi_get_null(env, &nullVal));
-    NAPI_STATUS_THROWS_VOID(napi_set_named_property(env, exports, "hypervisorVendor", nullVal));
+    NAPI_STATUS_THROWS(napi_get_null(env, &nullVal));
+    NAPI_STATUS_THROWS(napi_set_named_property(env, exports, "hypervisorVendor", nullVal));
   }
 
   // hypervisor bit
@@ -94,7 +116,7 @@ NAPI_METHOD(cpuInfo)
   // cpu brand
   char brand[49];
   cpu_write_brand(brand);
-  NAPI_EXPORT_STRING(brand);
+  NAPI_STATUS_THROWS(set_string(env, &exports, "brand", brand));
 
   // known cpu vendor
   int knownVMVendor = cpu_known_vm_vendors();
