@@ -104,9 +104,6 @@ NAPI_METHOD(cpuInfo)
   // get vendor
   char vendor[CPU_VENDOR_STRING_SIZE];
   cpu_write_vendor(vendor);
-  // we can't use NAPI_EXPORT_STRING since that
-  // uses NAPI_STATUS_THROWS_VOID which means we start returning
-  // corrupt pointers on error paths.
   NAPI_STATUS_THROWS(set_string(env, &exports, "vendor", vendor));
  
   // hypervisor vendor
