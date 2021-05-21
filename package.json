@@ -1,6 +1,6 @@
 {
   "name": "vm-detection",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Detect Virtual Machines from node <adapted from https://github.com/a0rtega/pafish>",
   "main": "./src/index",
   "scripts": {

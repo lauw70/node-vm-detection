@@ -26,17 +26,16 @@ static inline uint64_t rdtsc_diff_vmexit()
 	return ret2 - ret;
 }
 
-static inline void cpuid_vendor(char *vendor, uint32_t eax_value) // vendor: char[13]
+static inline void cpuid_vendor(char *vendor, uint32_t eax_value, int * reg_order) // vendor: char[13], reg_order: int[3]
 {
 	// get cpu identity data
 	int cpuinfo[4];
 	__cpuid(cpuinfo, eax_value);
 
 	// construct vendor string
-	int reg[] = {1, 3, 2};
 	for (int i = 0; i < 3; i++)
 	{
-		sprintf(vendor + 4 * i, "%c%c%c%c", cpuinfo[reg[i]], cpuinfo[reg[i]] >> 8, cpuinfo[reg[i]] >> 16, cpuinfo[reg[i]] >> 24);
+		sprintf(vendor + 4 * i, "%c%c%c%c", cpuinfo[reg_order[i]], cpuinfo[reg_order[i]] >> 8, cpuinfo[reg_order[i]] >> 16, cpuinfo[reg_order[i]] >> 24);
 	}
 	vendor[12] = 0x00;
 }
@@ -95,12 +94,14 @@ int cpu_hv()
 
 void cpu_write_vendor(char *vendor) // char[13]
 {
-	cpuid_vendor(vendor, 0);
+	int reg_order[] = {1,3,2};
+	cpuid_vendor(vendor, 0, reg_order);
 }
 
 void cpu_write_hv_vendor(char *vendor)
 {
-	cpuid_vendor(vendor, 0x40000000);
+	int reg_order[] = {1,2,3};
+	cpuid_vendor(vendor, 0x40000000, reg_order);
 }
 
 void cpu_write_brand(char *brand) // brand: char[49]
