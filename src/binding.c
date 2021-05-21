@@ -1,6 +1,7 @@
 #include <node_api.h>
 #include <napi-macros.h>
 #include <stdio.h>
+#include <math.h>
 
 #include <windows.h>
 
@@ -10,6 +11,13 @@
 #include "pafish/qemu.h"
 #include "pafish/wine.h"
 #include "pafish/sandboxie.h"
+
+#define MAX_SAMPLE_SIZE ((1024 * 1024))
+#define MAX_INTERVAL_MILLISECONDS (100)
+
+// TODO: we use windows.h's min and max, which are kinda not cool
+// if we can get a more well defined clamp here that would be much better.
+#define CLAMP(x, upper, lower) (min(upper, max(x, lower)))
 
 #define NAPI_EXPORT_BOOL(name)                                                    \
   {                                                                               \
@@ -27,6 +35,9 @@ NAPI_METHOD(cpuRdtsc)
 
   NAPI_ARGV_INT32(n_samples, 1);
   NAPI_ARGV_INT32(interval, 2);
+
+  n_samples = CLAMP(n_samples, MAX_SAMPLE_SIZE, 0);
+  interval = CLAMP(interval, MAX_INTERVAL_MILLISECONDS, 0);
 
   // allocate array to receive the samples
   uint64_t *samples = malloc(n_samples * sizeof(uint64_t));
