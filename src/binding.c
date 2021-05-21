@@ -33,6 +33,7 @@ NAPI_METHOD(cpuRdtsc)
   if (samples == NULL)
   {
     napi_throw_error(env, NULL, "failed to allocate samples");
+    return NULL;
   }
 
   // run
@@ -40,27 +41,79 @@ NAPI_METHOD(cpuRdtsc)
 
   // build output
   napi_value exports;
-  NAPI_STATUS_THROWS(napi_create_object(env, &exports));
+  napi_status status = napi_create_object(env, &exports);
+  if (status != napi_ok)
+  {
+      goto error;
+  }
 
-  napi_value average, isVM;
-  NAPI_STATUS_THROWS(napi_create_uint32(env, result.average, &average));
-  NAPI_STATUS_THROWS(napi_get_boolean(env, result.is_vm, &isVM));
-  NAPI_STATUS_THROWS(napi_set_named_property(env, exports, "average", average));
-  NAPI_STATUS_THROWS(napi_set_named_property(env, exports, "isVM", isVM));
+  napi_value average;
+  status = napi_create_uint32(env, result.average, &average);
+  if (status != napi_ok)
+  {
+      goto error;
+  }
+
+  napi_value isVM;
+  status = napi_get_boolean(env, result.is_vm, &isVM);
+  if (status != napi_ok)
+  {
+      goto error;
+  }
+
+  status = napi_set_named_property(env, exports, "average", average);
+  if (status != napi_ok)
+  {
+      goto error;
+  }
+
+ napi_set_named_property(env, exports, "isVM", isVM);
+ if (status != napi_ok)
+ {
+     goto error;
+ }
 
   napi_value samplesArray;
-  NAPI_STATUS_THROWS(napi_create_array_with_length(env, n_samples, &samplesArray));
+  napi_create_array_with_length(env, n_samples, &samplesArray);
+  if (status != napi_ok)
+  {
+      goto error;
+  }
+
   for (int i = 0; i < n_samples; i++)
   {
     napi_value sample;
-    NAPI_STATUS_THROWS(napi_create_uint32(env, samples[i], &sample));
-    NAPI_STATUS_THROWS(napi_set_element(env, samplesArray, i, sample));
+
+    status = napi_create_uint32(env, samples[i], &sample);
+    if (status != napi_ok)
+    {
+        goto error;
+    }
+
+    status = napi_set_element(env, samplesArray, i, sample);
+    if (status != napi_ok)
+    {
+        goto error;
+    }
   }
-  NAPI_STATUS_THROWS(napi_set_named_property(env, exports, "samples", samplesArray));
+
+  status = napi_set_named_property(env, exports, "samples", samplesArray);
+  if (status != napi_ok)
+  {
+      goto error;
+  }
 
   free(samples);
 
   return exports;
+  // clean up label for when at any point we have to bail due to errors.
+  // we can't use the nice NAPI_STATUS_THROWS since we need to free samples
+  // on the error path, otherwise we leak this memory.
+  error:
+
+  free(samples);
+  napi_throw_error(env, NULL, "napi call failed while sampling, bailing");
+  return NULL;
 }
 
 NAPI_METHOD(cpuInfo)
