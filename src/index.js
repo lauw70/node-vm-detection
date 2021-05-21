@@ -1,16 +1,25 @@
-const binding = require('node-gyp-build')(`${__dirname}/..`);
+
+const projectRoot = `${__dirname}/..`;
+const binding = require('node-gyp-build')(projectRoot);
 
 module.exports = {
     /**
-     * RDTSC performs a timing attach on the hyperversior
-     * [0]: force the hypervisor to interrupt normal flow. Required on modern CPUs for this check to work
-     * [1]: number of samples to take
-     * [2]: miliseconds of sleep between the samples
-     * Returns: {
-     *   average: number, average between samples
-     *   isVM: boolean, whether the average was above 1000 (force=true) or 750 (force=false)
-     *   samples: number[], all the samples that were taken
-     * }
+     * @typedef {Object} RtdscResult
+     * @property {Number} average - the average value between samples
+     * @property {Boolean} isVM - whether the average sample rate was above 1000 (forceVMexit=true) or above 750 (forceVMexit=false)
+     * @property {Array} samples - an array containing all the samples that were taken
+     */
+
+    /**
+     * RDTSC performs a timing trick on the CPU that forces the hypervisor, if active to suspend execution, which in turn forces a context switch.
+     * This allows us to sample the timing between the RTDSC calls and, if a hypervisor is running, introduce a measurable lag in sample timings.
+     * 
+     * @param forceVMexit {Boolean} - Force the hypervisor to interrupt normal flow. Required on modern CPUs for this check to work.
+     * @param numSamples {Number} - The amount of samples to take
+     * @param intervalMs {Number} - The amount of milliseconds to sleep between samples
+     * 
+     * @returns {RtdscResult}
+     * 
      */
     cpuRdtsc(forceVMexit, numSamples, intervalMs) {
         return binding.cpuRdtsc(forceVMexit, numSamples, intervalMs);
