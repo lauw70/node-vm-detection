@@ -1,7 +1,6 @@
 #include <node_api.h>
 #include <napi-macros.h>
 #include <stdio.h>
-#include <math.h>
 
 #include <windows.h>
 
