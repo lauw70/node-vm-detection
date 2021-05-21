@@ -26,6 +26,13 @@
     NAPI_STATUS_THROWS(napi_set_named_property(env, exports, #name, name##_bool)) \
   }
 
+
+/**
+ * We can't set properties using NAPI_EXPORT_STRING from the napi-macros set since it unconditionally
+ * uses NAPI_STATUS_THROWS_VOID, which means that we potentially corrupt return stack memory due to not
+ * returning an explicit value. Hence, let's create this small function to do that job for us, which is also
+ * nicely usable with the vanilla NAPI_STATUS_THROWS
+ */
 static napi_status set_string(napi_env env, napi_value *object, const char* key, const char* value)
 {
     napi_value utf8_value;
