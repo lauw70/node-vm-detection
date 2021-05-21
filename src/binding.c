@@ -217,7 +217,6 @@ NAPI_METHOD(sandboxie)
 
 NAPI_INIT()
 {
-  #if _WIN32
   NAPI_EXPORT_FUNCTION(cpuRdtsc);
   NAPI_EXPORT_FUNCTION(cpuInfo);
 
@@ -226,5 +225,4 @@ NAPI_INIT()
   NAPI_EXPORT_FUNCTION(qemu);
   NAPI_EXPORT_FUNCTION(wine);
   NAPI_EXPORT_FUNCTION(sandboxie);
-  #endif
 }

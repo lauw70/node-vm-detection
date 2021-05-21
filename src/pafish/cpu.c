@@ -62,13 +62,6 @@ static inline int cpuid_hv_bit()
 	return (cpuinfo[2] >> 31) & 0x1;
 }
 
-static inline int cpuid_psn()
-{
-	int cpuinfo[4];
-	__cpuid(cpuinfo, 1);
-	return (cpuinfo[3] >> 18) &1;
-}
-
 CpuRdtscResult cpu_rdtsc(int force_vm_exit, int n_samples, uint64_t *samples, int interval)
 {
 	CpuRdtscResult result = {0};
@@ -137,9 +130,4 @@ int cpu_known_vm_vendors()
 			return TRUE;
 	}
 	return FALSE;
-}
-
-int cpu_psn()
-{
-	return cpuid_psn();
 }

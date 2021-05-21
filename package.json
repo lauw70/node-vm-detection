@@ -2,13 +2,18 @@
   "name": "vm-detection",
   "version": "1.0.0",
   "description": "Detect Virtual Machines from node <adapted from https://github.com/a0rtega/pafish>",
-  "main": "index.js",
+  "main": "./src/index",
   "scripts": {
-    "test": "npm run build && node test.js",
-    "postinstall": "npm run rebuild",
-    "rebuild": "node-gyp rebuild -j 16",
-    "build": "node-gyp build -j 16",
-    "prepublish": "npm run rebuild && node test.js"
+    "install": "node -e \"process.platform === 'win32' && require('node-gyp-build/bin.js')\"",
+    "prepublishOnly": "npm run prebuild && npm run prebuild-ia32",
+    "prebuild": "prebuildify --napi=true --strip",
+    "prebuild-ia32": "prebuildify --napi=true --strip --arch=ia32",
+    "build": "node-gyp -j 16 build",
+    "build-debug": "node-gyp -j 16 build --debug",
+    "clean": "node-gyp clean",
+    "rebuild": "node-gyp -j 16 rebuild",
+    "rebuild-debug": "node-gyp -j 16 rebuild --debug",
+    "test": "node src/test.js"
   },
   "repository": {
     "type": "git",
@@ -21,6 +26,11 @@
   },
   "homepage": "https://github.com/lauw70/node-vm-detection#readme",
   "dependencies": {
-    "napi-macros": "^2.0.0"
+    "napi-macros": "^2.0.0",
+    "node-gyp": "^8.0.0",
+    "node-gyp-build": "^4.2.3"
+  },
+  "devDependencies": {
+    "prebuildify": "^4.1.2"
   }
 }
