@@ -11,6 +11,14 @@
 #include "pafish/wine.h"
 #include "pafish/sandboxie.h"
 
+
+// these are constant sizes that are guaranteed to not
+// change on a whim.
+#define CPU_VENDOR_STRING_SIZE 13
+#define CPU_BRAND_STRING_SIZE 49
+#define HYPERVISOR_VENDOR_STRING_SIZE 13
+#define HYPERVISOR_MIN_VENDOR_STRING_SIZE 10
+
 #define NAPI_EXPORT_BOOL(name)                                                    \
   {                                                                               \
     napi_value name##_bool;                                                       \
@@ -54,10 +62,9 @@ NAPI_METHOD(cpuRdtsc)
     napi_throw_error(env, NULL, "failed to allocate samples");
   }
 
-  // run
   CpuRdtscResult result = cpu_rdtsc(force_vm_exit, n_samples, samples, interval);
 
-  // build output
+  // create a standard JS Object for our result
   napi_value exports;
   NAPI_STATUS_THROWS(napi_create_object(env, &exports));
 
@@ -88,7 +95,7 @@ NAPI_METHOD(cpuInfo)
   NAPI_STATUS_THROWS(napi_create_object(env, &exports));
 
   // get vendor
-  char vendor[13];
+  char vendor[CPU_VENDOR_STRING_SIZE];
   cpu_write_vendor(vendor);
   // we can't use NAPI_EXPORT_STRING since that
   // uses NAPI_STATUS_THROWS_VOID which means we start returning
@@ -96,9 +103,9 @@ NAPI_METHOD(cpuInfo)
   NAPI_STATUS_THROWS(set_string(env, &exports, "vendor", vendor));
  
   // hypervisor vendor
-  char hypervisorVendor[13];
+  char hypervisorVendor[HYPERVISOR_VENDOR_STRING_SIZE];
   cpu_write_hv_vendor(hypervisorVendor);
-  if (strlen(hypervisorVendor) > 10)
+  if (strlen(hypervisorVendor) > HYPERVISOR_MIN_VENDOR_STRING_SIZE)
   {
     NAPI_STATUS_THROWS(set_string(env, &exports, "hypervisorVendor", hypervisorVendor));
   }
@@ -114,7 +121,7 @@ NAPI_METHOD(cpuInfo)
   NAPI_EXPORT_BOOL(hv_bit);
 
   // cpu brand
-  char brand[49];
+  char brand[CPU_BRAND_STRING_SIZE];
   cpu_write_brand(brand);
   NAPI_STATUS_THROWS(set_string(env, &exports, "brand", brand));
 
