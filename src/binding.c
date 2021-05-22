@@ -12,6 +12,13 @@
 #include "pafish/sandboxie.h"
 
 
+#define MAX_SAMPLE_SIZE ((1024 * 1024))
+#define MAX_INTERVAL_MILLISECONDS (100)
+
+// TODO: we use windows.h's min and max, which are kinda not cool
+// if we can get a more well defined clamp here that would be much better.
+#define CLAMP(x, upper, lower) (min(upper, max(x, lower)))
+
 // these are constant sizes that are guaranteed to not
 // change on a whim.
 #define CPU_VENDOR_STRING_SIZE 13
@@ -62,38 +69,94 @@ NAPI_METHOD(cpuRdtsc)
   NAPI_ARGV_INT32(n_samples, 1);
   NAPI_ARGV_INT32(interval, 2);
 
+  n_samples = CLAMP(n_samples, MAX_SAMPLE_SIZE, 0);
+  interval = CLAMP(interval, MAX_INTERVAL_MILLISECONDS, 0);
+
   // allocate array to receive the samples
   uint64_t *samples = malloc(n_samples * sizeof(uint64_t));
   if (samples == NULL)
   {
     napi_throw_error(env, NULL, "failed to allocate samples");
+    return NULL;
   }
 
   CpuRdtscResult result = cpu_rdtsc(force_vm_exit, n_samples, samples, interval);
 
   // create a standard JS Object for our result
   napi_value exports;
-  NAPI_STATUS_THROWS(napi_create_object(env, &exports));
+  napi_status status = napi_create_object(env, &exports);
+  if (status != napi_ok)
+  {
+      goto error;
+  }
 
-  napi_value average, isVM;
-  NAPI_STATUS_THROWS(napi_create_uint32(env, result.average, &average));
-  NAPI_STATUS_THROWS(napi_get_boolean(env, result.is_vm, &isVM));
-  NAPI_STATUS_THROWS(napi_set_named_property(env, exports, "average", average));
-  NAPI_STATUS_THROWS(napi_set_named_property(env, exports, "isVM", isVM));
+  napi_value average;
+  status = napi_create_uint32(env, result.average, &average);
+  if (status != napi_ok)
+  {
+      goto error;
+  }
+
+  napi_value isVM;
+  status = napi_get_boolean(env, result.is_vm, &isVM);
+  if (status != napi_ok)
+  {
+      goto error;
+  }
+
+  status = napi_set_named_property(env, exports, "average", average);
+  if (status != napi_ok)
+  {
+      goto error;
+  }
+
+ napi_set_named_property(env, exports, "isVM", isVM);
+ if (status != napi_ok)
+ {
+     goto error;
+ }
 
   napi_value samplesArray;
-  NAPI_STATUS_THROWS(napi_create_array_with_length(env, n_samples, &samplesArray));
+  napi_create_array_with_length(env, n_samples, &samplesArray);
+  if (status != napi_ok)
+  {
+      goto error;
+  }
+
   for (int i = 0; i < n_samples; i++)
   {
     napi_value sample;
-    NAPI_STATUS_THROWS(napi_create_uint32(env, samples[i], &sample));
-    NAPI_STATUS_THROWS(napi_set_element(env, samplesArray, i, sample));
+
+    status = napi_create_uint32(env, samples[i], &sample);
+    if (status != napi_ok)
+    {
+        goto error;
+    }
+
+    status = napi_set_element(env, samplesArray, i, sample);
+    if (status != napi_ok)
+    {
+        goto error;
+    }
   }
-  NAPI_STATUS_THROWS(napi_set_named_property(env, exports, "samples", samplesArray));
+
+  status = napi_set_named_property(env, exports, "samples", samplesArray);
+  if (status != napi_ok)
+  {
+      goto error;
+  }
 
   free(samples);
 
   return exports;
+  // clean up label for when at any point we have to bail due to errors.
+  // we can't use the nice NAPI_STATUS_THROWS since we need to free samples
+  // on the error path, otherwise we leak this memory.
+  error:
+
+  free(samples);
+  napi_throw_error(env, NULL, "napi call failed while sampling, bailing");
+  return NULL;
 }
 
 NAPI_METHOD(cpuInfo)
