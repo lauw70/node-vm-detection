@@ -11,12 +11,46 @@
 #include "pafish/wine.h"
 #include "pafish/sandboxie.h"
 
+
+// these are constant sizes that are guaranteed to not
+// change on a whim.
+#define CPU_VENDOR_STRING_SIZE 13
+#define CPU_BRAND_STRING_SIZE 49
+#define HYPERVISOR_VENDOR_STRING_SIZE 13
+#define HYPERVISOR_MIN_VENDOR_STRING_SIZE 10
+
 #define NAPI_EXPORT_BOOL(name)                                                    \
   {                                                                               \
     napi_value name##_bool;                                                       \
     NAPI_STATUS_THROWS(napi_get_boolean(env, name, &name##_bool))                 \
     NAPI_STATUS_THROWS(napi_set_named_property(env, exports, #name, name##_bool)) \
   }
+
+
+/**
+ * We can't set properties using NAPI_EXPORT_STRING from the napi-macros set since it unconditionally
+ * uses NAPI_STATUS_THROWS_VOID, which means that we potentially corrupt return stack memory due to not
+ * returning an explicit value. Hence, let's create this small function to do that job for us, which is also
+ * nicely usable with the vanilla NAPI_STATUS_THROWS
+ */
+static napi_status set_string(napi_env env, napi_value *object, const char* key, const char* value)
+{
+    napi_value utf8_value;
+    napi_status status = napi_create_string_utf8(env, value, NAPI_AUTO_LENGTH, &utf8_value);
+    if (status != napi_ok)
+    {
+        return status;
+    }
+
+    status = napi_set_named_property(env, *object, key, utf8_value);
+    if (status != napi_ok)
+    {
+        return status;
+    }
+
+
+    return napi_ok;
+}
 
 NAPI_METHOD(cpuRdtsc)
 {
@@ -35,10 +69,9 @@ NAPI_METHOD(cpuRdtsc)
     napi_throw_error(env, NULL, "failed to allocate samples");
   }
 
-  // run
   CpuRdtscResult result = cpu_rdtsc(force_vm_exit, n_samples, samples, interval);
 
-  // build output
+  // create a standard JS Object for our result
   napi_value exports;
   NAPI_STATUS_THROWS(napi_create_object(env, &exports));
 
@@ -66,25 +99,25 @@ NAPI_METHOD(cpuRdtsc)
 NAPI_METHOD(cpuInfo)
 {
   napi_value exports;
-  NAPI_STATUS_THROWS_VOID(napi_create_object(env, &exports));
+  NAPI_STATUS_THROWS(napi_create_object(env, &exports));
 
   // get vendor
-  char vendor[13];
+  char vendor[CPU_VENDOR_STRING_SIZE];
   cpu_write_vendor(vendor);
-  NAPI_EXPORT_STRING(vendor);
-
+  NAPI_STATUS_THROWS(set_string(env, &exports, "vendor", vendor));
+ 
   // hypervisor vendor
-  char hypervisorVendor[13];
+  char hypervisorVendor[HYPERVISOR_VENDOR_STRING_SIZE];
   cpu_write_hv_vendor(hypervisorVendor);
-  if (strlen(hypervisorVendor) > 10)
+  if (strlen(hypervisorVendor) > HYPERVISOR_MIN_VENDOR_STRING_SIZE)
   {
-    NAPI_EXPORT_STRING(hypervisorVendor);
+    NAPI_STATUS_THROWS(set_string(env, &exports, "hypervisorVendor", hypervisorVendor));
   }
   else
   {
     napi_value nullVal;
-    NAPI_STATUS_THROWS_VOID(napi_get_null(env, &nullVal));
-    NAPI_STATUS_THROWS_VOID(napi_set_named_property(env, exports, "hypervisorVendor", nullVal));
+    NAPI_STATUS_THROWS(napi_get_null(env, &nullVal));
+    NAPI_STATUS_THROWS(napi_set_named_property(env, exports, "hypervisorVendor", nullVal));
   }
 
   // hypervisor bit
@@ -92,9 +125,9 @@ NAPI_METHOD(cpuInfo)
   NAPI_EXPORT_BOOL(hv_bit);
 
   // cpu brand
-  char brand[49];
+  char brand[CPU_BRAND_STRING_SIZE];
   cpu_write_brand(brand);
-  NAPI_EXPORT_STRING(brand);
+  NAPI_STATUS_THROWS(set_string(env, &exports, "brand", brand));
 
   // known cpu vendor
   int knownVMVendor = cpu_known_vm_vendors();
