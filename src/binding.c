@@ -260,7 +260,7 @@ NAPI_METHOD(virtualBox)
   NAPI_EXPORT_BOOL(deviceDrivers);
   NAPI_EXPORT_BOOL(systemFiles);
   NAPI_EXPORT_BOOL(nicMacAddress);
-  NAPI_EXPORT_BOOL(deviceDrivers);
+  NAPI_EXPORT_BOOL(devices);
   NAPI_EXPORT_BOOL(trayWindow);
   NAPI_EXPORT_BOOL(sharedNetwork);
   NAPI_EXPORT_BOOL(processes);
