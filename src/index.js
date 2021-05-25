@@ -55,6 +55,7 @@ module.exports = {
      * @property {Boolean} deviceDrivers -
      * @property {Boolean} systemFiles -
      * @property {Boolean} nicMacAddress -
+     * @property {Boolean} devices -
      * @property {Boolean} trayWindow -
      * @property {Boolean} sharedNetwork -
      * @property {Boolean} processes -
